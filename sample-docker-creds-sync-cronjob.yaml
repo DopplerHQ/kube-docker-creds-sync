@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: doppler-docker-creds-sync
+  namespace: doppler-secrets-sync
+  labels:
+    doppler-sync: docker-creds-cronjob
+spec:
+  schedule: '*/1 * * * *'
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            doppler-sync: docker-creds-cronjob
+        spec:
+          containers:
+          - name: doppler-docker-creds-sync            
+            image: dopplerhq/kube-docker-creds-sync
+            imagePullPolicy: IfNotPresent
+            env:
+              - name: DOPPLER_TOKEN_SECRET # Doppler token Kube secret ('.serviceToken')
+                value: doppler-token-secret
+
+              - name: DOPPLER_TOKEN_NAMESPACE # Doppler token Kube secret namespace
+                value: doppler-secrets-sync
+
+              - name: DOCKER_CREDS_VAR # Name of secret containing registry creds in Doppler
+                value: DOCKER_CREDENTIALS
+
+              - name: DOCKER_CREDS_SECRET # Name of Docker creds Kube secret to create
+                value: doppler-synced-docker-credentials
+
+              - name: DOCKER_CREDS_NAMESPACE # Namespace where Docker creds Kube secret will be created
+                value: default
+
+          restartPolicy: Never
+          terminationGracePeriodSeconds: 0
+          serviceAccountName: doppler-secrets-sync-service-account
+
